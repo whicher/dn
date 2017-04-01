@@ -40,7 +40,7 @@ $( document ).ready(function() {
 
     // URL handling.
     if(currentUrl.indexOf('/details?id=') > 0) {
-      console.log('DETAILS PAGE');
+      console.log('SINGLE NEWS DETAILS PAGE');
       $('#div-job-details').append('<h1>Discuss</h1>');
       var params = getJsonFromUrl(currentUrl);
       // var jobKey = params.id.substr(params.job.lastIndexOf('_') + 1);
@@ -48,6 +48,20 @@ $( document ).ready(function() {
       console.log('param: ' + jobKey);
 
       var ref = firebase.database().ref('posts/' + jobKey);
+      var job = {};
+      ref.once('value', function(snapshot) {
+        updateUIDetails(JSON.parse(JSON.stringify(snapshot)));
+      });
+
+    } else if(currentUrl.indexOf('/dataset?id=') > 0) {
+      console.log('SINGLE DATASET PAGE');
+      $('#div-job-details').append('<h1>Discuss</h1>');
+      var params = getJsonFromUrl(currentUrl);
+      // var jobKey = params.id.substr(params.job.lastIndexOf('_') + 1);
+      var jobKey = params.id;
+      console.log('param: ' + jobKey);
+
+      var ref = firebase.database().ref('datasets/' + jobKey);
       var job = {};
       ref.once('value', function(snapshot) {
         updateUIDetails(JSON.parse(JSON.stringify(snapshot)));
@@ -200,6 +214,7 @@ function queryFirebase(path, limit, orderBy, callback) {
     snapshot.forEach(function(childSnapshot) {
       var childKey = childSnapshot.key;
       var childData = childSnapshot.val();
+      // console.log('val: ' + JSON.stringify(childData));
       callback(childData);
     });
   });
@@ -215,9 +230,9 @@ function appendPostToRecentNews(post) {
   // console.log('Appending post to news');
   $('#ul-news').append(
       '<li>' + 
-        '<p><b><a href="/details?id=' + post._id.oid + '" target="_blank">' + post.title + '</a></b></p>' +
+        '<p><b><a href="/details?id=' + post.hash + '" target="_blank">' + post.title + '</a></b></p>' +
         '<p><sup>' + post.dt_create.date + ' | ' + post.domain + ' | ' +
-          '<a href=/details?id=' + post._id.oid + '" target="_blank">Comment</a></sup>' +
+          '<a href=/details?id=' + post.hash + '" target="_blank">Comment</a></sup>' +
       '</li>');
 }
 
@@ -231,9 +246,9 @@ function appendDatasetToRecentDatasets(post) {
   // console.log('Appending post to news');
   $('#ul-datasets').append(
       '<li>' + 
-        '<p><b><a href="/details?id=' + post._id.oid + '" target="_blank">' + post.title + '</a></b></p>' +
+        '<p><b><a href="/dataset?id=' + post.hash + '" target="_blank">' + post.title + '</a></b></p>' +
         '<p><sup>' + post.dt_create.date + ' | ' + post.domain + ' | ' +
-          '<a href=/details?id=' + post._id.oid + '" target="_blank">Comment</a></sup>' +
+          '<a href=/dataset?id=' + post.hash + '" target="_blank">Comment</a></sup>' +
       '</li>');
 }
 
@@ -259,7 +274,7 @@ function DoSearch() {
     });
   }
 
-  GetJobKeys(_RAW_QUERY);
+  GetDatasetKeys(_RAW_QUERY);
   
   // Log the query for analysis.
   if (firebase.auth().currentUser != null) {
@@ -302,8 +317,8 @@ function getJsonFromUrl() {
   return result;
 }
 
-function GetJobKeys(query) {
-  console.log('GetJobKeys ' + query);
+function GetDatasetKeys(query) {
+  console.log('GetDatasetKeys ' + query);
   var jobKeys = [];
   var ref = firebase.database().ref('datasets_index/' + query).orderByValue().limitToFirst(20);
   ref.once('value', function(snapshot) {
@@ -314,12 +329,12 @@ function GetJobKeys(query) {
       // console.log('childData: ' + JSON.stringify(childData));
       jobKeys.push(childData);
     });
-    GetJobs(jobKeys);
+    GetDatasets(jobKeys);
   });
 }
 
-function GetJobs(jobKeys) {
-  console.log('GetJobs ' + jobKeys.length);
+function GetDatasets(jobKeys) {
+  console.log('GetDatasets ' + jobKeys.length);
   var jobs = [];
   for (var i = jobKeys.length - 1; i >= 0; i--) {
     var key = jobKeys[i];
@@ -342,7 +357,7 @@ function updateUI(jobs) {
     if ($('#li-job-' + jobs[i].hash).length < 1) {
       $('#ul-search-results').append(
           '<li id="li-job-' + jobs[i].domain +'">' +
-          '<h4><a href="/dataset?id=' + jobs[i]._id.oid + '" target="_blank">' + jobs[i].title + '</a></h4>' + 
+          '<h4><a href="/dataset?id=' + jobs[i].hash + '" target="_blank">' + jobs[i].title + '</a></h4>' + 
           '<sub>' + jobs[i].dt_create.date + ' | ' + JSON.stringify(jobs[i].meta) + ' | ' + '</sub>' + 
           '</li>');
     }
