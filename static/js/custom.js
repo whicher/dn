@@ -191,7 +191,7 @@ function populateNews() {
       var childKey = childSnapshot.key;
       var childData = childSnapshot.val();
       // console.log('childKey: ' + JSON.stringify(childKey));
-      console.log('childData: ' + JSON.stringify(childData));
+      // console.log('childData: ' + JSON.stringify(childData));
       //jobKeys.push(childData);
       appendPostToNews(childData);
     });
@@ -200,7 +200,7 @@ function populateNews() {
 }
 
 function appendPostToNews(post) {
-  console.log('Appending post to news');
+  // console.log('Appending post to news');
   $('#ul-news').append(
       '<li>' + 
         '<p><b><a href="/details?id=' + post._id.oid + '" target="_blank">' + post.title + '</a></b></p>' +
@@ -339,10 +339,10 @@ function updateUiWithLogin() {
     console.log('Logged in');
     $('#a-signin').text(user.displayName);
     $('#a-signin').attr('href', '/profile');
-    $('#btn-logout').text('Oturumu kapat');
+    $('#btn-logout').text('Log out');
   } else {
     console.log('Not logged in');
-    $('#a-signin').text('Kaydol/Oturum Aç');
+    $('#a-signin').text('Log in/Sign up');
     $('#a-signin').attr('href', '/login');
     $('#btn-logout').text('');
   }
