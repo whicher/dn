@@ -50,13 +50,6 @@ $( document ).ready(function() {
       var ref = firebase.database().ref('posts/' + jobKey);
       var job = {};
       ref.once('value', function(snapshot) {
-        // snapshot.forEach(function(childSnapshot) {
-        //   var childKey = childSnapshot.key;
-        //   var childData = childSnapshot.val();
-        //   // console.log('childKey: ' + JSON.stringify(childKey));
-        //   // console.log('childData: ' + JSON.stringify(childData));
-        //   job = childData;
-        // });
         updateUIDetails(JSON.parse(JSON.stringify(snapshot)));
       });
 
@@ -88,6 +81,7 @@ $( document ).ready(function() {
     } else {
       console.log('HOMEPAGE');
       populateNews();
+      populateDatasets();
 
       $('#div-search-results').hide();
 
@@ -171,8 +165,7 @@ $( document ).ready(function() {
     }
 });
 
-function populateNews() {
-  console.log('populating news');
+function getCurrentUserOrLogInAnonymously() {
   var user = firebase.auth().currentUser;
   console.log('Querying as user: ' + user);
   if (user == null) {
@@ -183,23 +176,42 @@ function populateNews() {
       var errorMessage = error.message;
       console.log('Error: ' + errorCode + ' msg: ' + errorMessage);
     });
+    return firebase.auth().currentUser;
   }
+  return user;
+}
 
-  var ref = firebase.database().ref('posts/').orderByKey().limitToLast(50);
+/**
+ * path: str, Fb path.
+ * limit: int, query fetch limit.
+ * callback: function, what to do when the data piece has come.
+ *   This will be called for each item every time the data is fetched.
+ */
+function queryFirebase(path, limit, orderBy, callback) {
+  var ref = null;
+  if (orderBy == 'key') {
+    ref = firebase.database().ref(path).orderByKey().limitToLast(limit);
+  } else if (orderBy =='value') {
+    ref = firebase.database().ref(path).orderByValue().limitToLast(limit);
+  } else {
+    ref = firebase.database().ref(path).orderBy(orderBy).limitToLast(limit);
+  }
   ref.once('value', function(snapshot) {
     snapshot.forEach(function(childSnapshot) {
       var childKey = childSnapshot.key;
       var childData = childSnapshot.val();
-      // console.log('childKey: ' + JSON.stringify(childKey));
-      // console.log('childData: ' + JSON.stringify(childData));
-      //jobKeys.push(childData);
-      appendPostToNews(childData);
+      callback(childData);
     });
-    //GetJobs(jobKeys);
   });
 }
 
-function appendPostToNews(post) {
+function populateNews() {
+  console.log('populating news');
+  var user = getCurrentUserOrLogInAnonymously();
+  queryFirebase('posts/', 50, 'key', appendPostToRecentNews);
+}
+
+function appendPostToRecentNews(post) {
   // console.log('Appending post to news');
   $('#ul-news').append(
       '<li>' + 
@@ -208,6 +220,23 @@ function appendPostToNews(post) {
           '<a href=/details?id=' + post._id.oid + '" target="_blank">Comment</a></sup>' +
       '</li>');
 }
+
+function populateDatasets() {
+  console.log('populating datasets');
+  var user = getCurrentUserOrLogInAnonymously();
+  queryFirebase('datasets/', 50, 'key', appendDatasetToRecentDatasets);
+}
+
+function appendDatasetToRecentDatasets(post) {
+  // console.log('Appending post to news');
+  $('#ul-datasets').append(
+      '<li>' + 
+        '<p><b><a href="/details?id=' + post._id.oid + '" target="_blank">' + post.title + '</a></b></p>' +
+        '<p><sup>' + post.dt_create.date + ' | ' + post.domain + ' | ' +
+          '<a href=/details?id=' + post._id.oid + '" target="_blank">Comment</a></sup>' +
+      '</li>');
+}
+
 
 function DoSearch() {
   console.log('Doing search...');
