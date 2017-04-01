@@ -39,14 +39,15 @@ $( document ).ready(function() {
     });
 
     // URL handling.
-    if(currentUrl.indexOf('/details?job=') > 0) {
+    if(currentUrl.indexOf('/details?id=') > 0) {
       console.log('DETAILS PAGE');
-      $('#div-job-details').append('<h1>İş Detayları</h1>');
+      $('#div-job-details').append('<h1>Discuss</h1>');
       var params = getJsonFromUrl(currentUrl);
-      var jobKey = params.job.substr(params.job.lastIndexOf('_') + 1);
+      // var jobKey = params.id.substr(params.job.lastIndexOf('_') + 1);
+      var jobKey = params.id;
       console.log('param: ' + jobKey);
 
-      var ref = firebase.database().ref('jobs_hash_keyed/' + jobKey);
+      var ref = firebase.database().ref('posts/' + jobKey);
       var job = {};
       ref.once('value', function(snapshot) {
         // snapshot.forEach(function(childSnapshot) {
@@ -86,6 +87,8 @@ $( document ).ready(function() {
       }
     } else {
       console.log('HOMEPAGE');
+      populateNews();
+
       $('#div-search-results').hide();
 
       $('#form-search').submit(function(e) {
@@ -168,6 +171,44 @@ $( document ).ready(function() {
     }
 });
 
+function populateNews() {
+  console.log('populating news');
+  var user = firebase.auth().currentUser;
+  console.log('Querying as user: ' + user);
+  if (user == null) {
+    console.log('user is null so signing in anonymously for news');
+    firebase.auth().signInAnonymously().catch(function(error) {
+      // Handle Errors here.
+      var errorCode = error.code;
+      var errorMessage = error.message;
+      console.log('Error: ' + errorCode + ' msg: ' + errorMessage);
+    });
+  }
+
+  var ref = firebase.database().ref('posts/').orderByKey().limitToLast(50);
+  ref.once('value', function(snapshot) {
+    snapshot.forEach(function(childSnapshot) {
+      var childKey = childSnapshot.key;
+      var childData = childSnapshot.val();
+      // console.log('childKey: ' + JSON.stringify(childKey));
+      console.log('childData: ' + JSON.stringify(childData));
+      //jobKeys.push(childData);
+      appendPostToNews(childData);
+    });
+    //GetJobs(jobKeys);
+  });
+}
+
+function appendPostToNews(post) {
+  console.log('Appending post to news');
+  $('#ul-news').append(
+      '<li>' + 
+        '<p><b><a href="/details?id=' + post._id.oid + '" target="_blank">' + post.title + '</a></b></p>' +
+        '<p><sup>' + post.dt_create.date + ' | ' + post.domain + ' | ' +
+          '<a href=/details?id=' + post._id.oid + '" target="_blank">Comment</a></sup>' +
+      '</li>');
+}
+
 function DoSearch() {
   console.log('Doing search...');
   console.log('Cleaning up previous search');
@@ -235,7 +276,7 @@ function getJsonFromUrl() {
 function GetJobKeys(query) {
   console.log('GetJobKeys ' + query);
   var jobKeys = [];
-  var ref = firebase.database().ref('jobs_index/' + query).orderByValue().limitToFirst(20);
+  var ref = firebase.database().ref('datasets_index/' + query).orderByValue().limitToFirst(20);
   ref.once('value', function(snapshot) {
     snapshot.forEach(function(childSnapshot) {
       var childKey = childSnapshot.key;
@@ -253,7 +294,7 @@ function GetJobs(jobKeys) {
   var jobs = [];
   for (var i = jobKeys.length - 1; i >= 0; i--) {
     var key = jobKeys[i];
-    var ref = firebase.database().ref('jobs_hash_keyed/' + key);
+    var ref = firebase.database().ref('datasets/' + key);
     ref.once('value', function(snapshot) {
       // No need to do the foreach because it's already one single object.
       // If you do this for each it iterates over the object keys. Unnecessary
@@ -271,10 +312,9 @@ function updateUI(jobs) {
   for (var i = jobs.length - 1; i >= 0; i--) {
     if ($('#li-job-' + jobs[i].hash).length < 1) {
       $('#ul-search-results').append(
-          '<li id="li-job-' + jobs[i].hash +'">' +
-          '<h4><a href="/details?job=' + jobs[i].slug + '_' + jobs[i].hash + '" target="_blank">' + jobs[i].title + '</a></h4>' + 
-          '<sub>' + jobs[i].city + ' | ' + jobs[i].company + ' | ' + jobs[i].category +
-          ' | ' + jobs[i].date + '</sub>' + 
+          '<li id="li-job-' + jobs[i].domain +'">' +
+          '<h4><a href="/dataset?id=' + jobs[i]._id.oid + '" target="_blank">' + jobs[i].title + '</a></h4>' + 
+          '<sub>' + jobs[i].dt_create.date + ' | ' + JSON.stringify(jobs[i].meta) + ' | ' + '</sub>' + 
           '</li>');
     }
   }
@@ -335,15 +375,18 @@ function createProfileInfo() {
   }
 }
 
-function updateUIDetails(job) {
-  console.log('updateUIDetails');
-  $('#div-job-details').append('<h2>' + job.title + '</h2>');
-  $('#div-job-details').append('<ul>');
-  $('#div-job-details').append('<li>Şehir: <b>' + job.city + '</b></li>');
-  $('#div-job-details').append('<li>Kategori: <b>' + job.category + '</b></li>');
-  $('#div-job-details').append('<li>Gereksinimler & aranan özellikler:<br><b>' + job.description + '</b></li>');
-  $('#div-job-details').append('<li>Şirket: <a href="' + job.company_link + '" target="_blank">' + job.company + '</a></li>');
-  $('#div-job-details').append('<li><img src="' + job.company_img +'"></li>');
-  $('#div-job-details').append('</ul>');
-  $('#div-job-details').append('<p><a class="btn btn-lg btn-primary btn-block" href="' + job.link + '" target="_blank">Hemen bu işe başvur</a></h2>');
+function updateUIDetails(post) {
+  console.log('updateUIDetails ');
+  console.log(JSON.stringify(post));
+  $('#div-post-details').append('<h2>' + post.title + '</h2>');
+  $('#div-post-details').append('<ul>');
+  $('#div-post-details').append('<li>At: <b>' + post.dt_create.date + '</b></li>');
+  $('#div-post-details').append('<li>Score: <b>' + post.score + '</b></li>');
+  $('#div-post-details').append('<li>Ups: <b>' + Object.keys(post.actions.votes.users_upvote).length + '</b></li>');
+  // $('#div-post-details').append('<li>Downs: <b>' + post.actions.votes.users_downvote.length + '</b></li>');
+  $('#div-post-details').append('<li><b>' + post.categories[0] + '</b></li>');
+  $('#div-post-details').append('<li><div>' + post.body + '</div></b></li>');
+  $('#div-post-details').append('<li>By <a href="/profile?u="' + post.owner.oid + '" target="_blank">' + post.author + '</a></b></li>');
+  $('#div-post-details').append('</ul>');
+  $('#div-post-details').append('<p><a class="btn btn-lg btn-primary btn-block" href="' + post.url + '" target="_blank">Read more</a></h2>');
 }
