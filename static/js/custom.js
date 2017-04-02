@@ -227,8 +227,9 @@ function populateNews() {
 }
 
 function appendPostToRecentNews(post) {
-  // console.log('Appending post to news');
-  $('#ul-news').append(
+  console.log('Appending post to news');
+  console.log('post: ' + JSON.stringify(post));
+  $('#ul-news').prepend(
       '<li>' + 
         '<p><b><a href="/details?id=' + post.hash + '" target="_blank">' + post.title + '</a></b></p>' +
         '<p><sup>' + post.dt_create.date + ' | ' + post.domain + ' | ' +
@@ -244,7 +245,7 @@ function populateDatasets() {
 
 function appendDatasetToRecentDatasets(post) {
   // console.log('Appending post to news');
-  $('#ul-datasets').append(
+  $('#ul-datasets').prepend(
       '<li>' + 
         '<p><b><a href="/dataset?id=' + post.hash + '" target="_blank">' + post.title + '</a></b></p>' +
         '<p><sup>' + post.dt_create.date + ' | ' + post.domain + ' | ' +
@@ -426,11 +427,18 @@ function updateUIDetails(post) {
   $('#div-post-details').append('<ul>');
   $('#div-post-details').append('<li>At: <b>' + post.dt_create.date + '</b></li>');
   $('#div-post-details').append('<li>Score: <b>' + post.score + '</b></li>');
-  $('#div-post-details').append('<li>Ups: <b>' + Object.keys(post.actions.votes.users_upvote).length + '</b></li>');
+  if (post.actions && post.actions.votes && post.actions.votes.users_upvte) {
+    $('#div-post-details').append('<li>Ups: <b>' + Object.keys(post.actions.votes.users_upvote).length + '</b></li>');
+  }
   // $('#div-post-details').append('<li>Downs: <b>' + post.actions.votes.users_downvote.length + '</b></li>');
-  $('#div-post-details').append('<li><b>' + post.categories[0] + '</b></li>');
+  if (post.categories && post.categories.length > 0) {
+    $('#div-post-details').append('<li><b>' + post.categories[0] + '</b></li>');
+  }
   $('#div-post-details').append('<li><div>' + post.body + '</div></b></li>');
-  $('#div-post-details').append('<li>By <a href="/profile?u="' + post.owner.oid + '" target="_blank">' + post.author + '</a></b></li>');
+  if (post.meta != null) {
+    $('#div-post-details').append('<p><pre>' + JSON.stringify(post.meta, null, 4) + '</pre></p>');
+  }
+  $('#div-post-details').append('<li>By <a href="/profile?u="' + post.author + '" target="_blank">' + post.author + '</a></b></li>');
   $('#div-post-details').append('</ul>');
   $('#div-post-details').append('<p><a class="btn btn-lg btn-primary btn-block" href="' + post.url + '" target="_blank">Read more</a></h2>');
 }
