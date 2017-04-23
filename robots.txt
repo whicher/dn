@@ -1,2 +1,2 @@
-Sitemap: http://datanews.io/sitemap.xml
+Sitemap: http://datanews.io/sitemap_datasets.xml
 

@@ -245,10 +245,16 @@ function populateDatasets() {
 
 function appendDatasetToRecentDatasets(post) {
   // console.log('Appending post to news');
+	var postDate = '';
+	if (post.dt_create.date != null) {
+    postDate = post.dt_create.date;
+	} else {
+	  postDate = post.dt_create;
+	}
   $('#ul-datasets').prepend(
       '<li>' + 
         '<p><b><a href="/dataset?id=' + post.hash + '" target="_blank">' + post.title + '</a></b></p>' +
-        '<p><sup>' + post.dt_create.date + ' | ' + post.domain + ' | ' +
+        '<p><sup>' + postDate + ' | ' + post.domain + ' | ' +
           '<a href=/dataset?id=' + post.hash + '" target="_blank">Comment</a></sup>' +
       '</li>');
 }
@@ -423,9 +429,19 @@ function createProfileInfo() {
 function updateUIDetails(post) {
   console.log('updateUIDetails ');
   console.log(JSON.stringify(post));
+	var postDate = '';
+	if (post.dt_create.date != null) {
+    postDate = post.dt_create.date;
+	} else {
+	  postDate = post.dt_create;
+	}
   $('#div-post-details').append('<h2>' + post.title + '</h2>');
   $('#div-post-details').append('<ul>');
-  $('#div-post-details').append('<li>At: <b>' + post.dt_create.date + '</b></li>');
+	if (post.shortBody != null) {
+  	$('#div-post-details').append('<li>' + post.shortBody + '</li>');
+	}
+  $('#div-post-details').append('<hr>');	
+  $('#div-post-details').append('<li>At: <b>' + postDate + '</b></li>');
   $('#div-post-details').append('<li>Score: <b>' + post.score + '</b></li>');
   if (post.actions && post.actions.votes && post.actions.votes.users_upvte) {
     $('#div-post-details').append('<li>Ups: <b>' + Object.keys(post.actions.votes.users_upvote).length + '</b></li>');
